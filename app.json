@@ -49,7 +49,7 @@
       },
       "DB_URI": {
          "description": "Your postgres sql db, empty this field if you dont have one",
-         "required": true,
+         "required": false,
          "value": ""
       },  
       "OWNER_ID": {
