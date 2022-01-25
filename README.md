@@ -29,7 +29,7 @@
 ## ✨ Easy To Deploy ✨
 The easiest way to deploy this Bot
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/maxsupun/Max-Robot.git)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/Userbot007/Max-Robot.git)
 
 
 ### Self-hosting (For Devs) ⚔
