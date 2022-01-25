@@ -2,10 +2,9 @@ import logging
 import os
 import sys
 import time
-
 import spamwatch
+
 import telegram.ext as tg
-from pyrogram import Client, errors
 from telethon import TelegramClient
 
 StartTime = time.time()
@@ -40,25 +39,22 @@ if ENV:
     OWNER_USERNAME = os.environ.get("OWNER_USERNAME", None)
 
     try:
-        DRAGONS = set(int(x) for x in os.environ.get("DRAGONS", "").split())
+        SUDO_USERS = set(int(x) for x in os.environ.get("SUDO_USERS", "").split())
         DEV_USERS = set(int(x) for x in os.environ.get("DEV_USERS", "").split())
     except ValueError:
         raise Exception("Your sudo or dev users list does not contain valid integers.")
 
     try:
-        DEMONS = set(int(x) for x in os.environ.get("DEMONS", "").split())
+        SUPPORT_USERS = set(int(x) for x in os.environ.get("SUPPORT_USERS", "").split())
     except ValueError:
         raise Exception("Your support users list does not contain valid integers.")
 
     try:
-        WOLVES = set(int(x) for x in os.environ.get("WOLVES", "").split())
+        WHITELIST_USERS = set(int(x) for x in os.environ.get("WHITELIST_USERS", "").split())
     except ValueError:
         raise Exception("Your whitelisted users list does not contain valid integers.")
 
-    try:
-        TIGERS = set(int(x) for x in os.environ.get("TIGERS", "").split())
-    except ValueError:
-        raise Exception("Your tiger users list does not contain valid integers.")
+        raise Exception("Your whitelisted users list does not contain valid integers.")
 
     INFOPIC = bool(os.environ.get("INFOPIC", False))
     EVENT_LOGS = os.environ.get("EVENT_LOGS", None)
@@ -68,7 +64,7 @@ if ENV:
     CERT_PATH = os.environ.get("CERT_PATH")
     API_ID = os.environ.get("API_ID", None)
     API_HASH = os.environ.get("API_HASH", None)
-    DB_URI = os.environ.get("DB_URI")
+    DB_URI = os.environ.get("DATABASE_URL")
     DONATION_LINK = os.environ.get("DONATION_LINK")
     LOAD = os.environ.get("LOAD", "").split()
     NO_LOAD = os.environ.get("NO_LOAD", "translation").split()
@@ -82,22 +78,11 @@ if ENV:
     AI_API_KEY = os.environ.get("AI_API_KEY", None)
     WALL_API = os.environ.get("WALL_API", None)
     SUPPORT_CHAT = os.environ.get("SUPPORT_CHAT", None)
-    YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", None)
     SPAMWATCH_SUPPORT_CHAT = os.environ.get("SPAMWATCH_SUPPORT_CHAT", None)
     SPAMWATCH_API = os.environ.get("SPAMWATCH_API", None)
-    REPOSITORY = os.environ.get("REPOSITORY", "")
-    REDIS_URL = os.environ.get("REDIS_URL")
-    IBM_WATSON_CRED_URL = os.environ.get("IBM_WATSON_CRED_URL", None)
-    IBM_WATSON_CRED_PASSWORD = os.environ.get("IBM_WATSON_CRED_PASSWORD", None)
-    TEMP_DOWNLOAD_DIRECTORY = os.environ.get("TEMP_DOWNLOAD_DIRECTORY", "./")
-    bot_start_time = time.time()
+    WEATHER_API = os.environ.get("WEATHER_API", None)
 
-    try:
-        WHITELIST_CHATS = set(
-            int(x) for x in os.environ.get("WHITELIST_CHATS", "").split()
-        )
-    except ValueError:
-        raise Exception("Your blacklisted chats list does not contain valid integers.")
+    ALLOW_CHATS = os.environ.get("ALLOW_CHATS", True)
 
     try:
         BL_CHATS = set(int(x) for x in os.environ.get("BL_CHATS", "").split())
@@ -105,7 +90,7 @@ if ENV:
         raise Exception("Your blacklisted chats list does not contain valid integers.")
 
 else:
-    from Maxrobot.config import Development as Config
+    from Lumine.config import Development as Config
 
     TOKEN = Config.TOKEN
 
@@ -116,27 +101,24 @@ else:
 
     JOIN_LOGGER = Config.JOIN_LOGGER
     OWNER_USERNAME = Config.OWNER_USERNAME
-
+    ALLOW_CHATS = Config.ALLOW_CHATS
     try:
-        DRAGONS = set(int(x) for x in Config.DRAGONS or [])
+        SUDO_USERS = set(int(x) for x in Config.SUDO_USERS or [])
         DEV_USERS = set(int(x) for x in Config.DEV_USERS or [])
     except ValueError:
         raise Exception("Your sudo or dev users list does not contain valid integers.")
 
     try:
-        DEMONS = set(int(x) for x in Config.DEMONS or [])
+        SUPPORT_USERS = set(int(x) for x in Config.SUPPORT_USERS or [])
     except ValueError:
         raise Exception("Your support users list does not contain valid integers.")
 
     try:
-        WOLVES = set(int(x) for x in Config.WOLVES or [])
+        WHITELIST_USERS = set(int(x) for x in Config.WHITELIST_USERS or [])
     except ValueError:
         raise Exception("Your whitelisted users list does not contain valid integers.")
 
-    try:
-        TIGERS = set(int(x) for x in Config.TIGERS or [])
-    except ValueError:
-        raise Exception("Your tiger users list does not contain valid integers.")
+        raise Exception("Your whitelisted users list does not contain valid integers.")
 
     EVENT_LOGS = Config.EVENT_LOGS
     WEBHOOK = Config.WEBHOOK
@@ -162,38 +144,38 @@ else:
     SUPPORT_CHAT = Config.SUPPORT_CHAT
     SPAMWATCH_SUPPORT_CHAT = Config.SPAMWATCH_SUPPORT_CHAT
     SPAMWATCH_API = Config.SPAMWATCH_API
-    YOUTUBE_API_KEY = Config.YOUTUBE_API_KEY
     INFOPIC = Config.INFOPIC
+    WEATHER_API = Config.WEATHER_API
 
     try:
         BL_CHATS = set(int(x) for x in Config.BL_CHATS or [])
     except ValueError:
         raise Exception("Your blacklisted chats list does not contain valid integers.")
 
-DRAGONS.add(OWNER_ID)
+SUDO_USERS.add(OWNER_ID)
 DEV_USERS.add(OWNER_ID)
 
 if not SPAMWATCH_API:
     sw = None
     LOGGER.warning("SpamWatch API key missing! recheck your config.")
 else:
-    sw = spamwatch.Client(SPAMWATCH_API)
-
+    try:
+        sw = spamwatch.Client(SPAMWATCH_API)
+    except:
+        sw = None
+        LOGGER.warning("Can't connect to SpamWatch!")
 
 updater = tg.Updater(TOKEN, workers=WORKERS, use_context=True)
-telethn = TelegramClient("saitama", API_ID, API_HASH)
-pbot = Client("Maxrobot", api_id=API_ID, api_hash=API_HASH, bot_token=TOKEN)
+telethn = TelegramClient("Lumine", API_ID, API_HASH)
 dispatcher = updater.dispatcher
 
-
-DRAGONS = list(DRAGONS) + list(DEV_USERS)
+SUDO_USERS = list(SUDO_USERS) + list(DEV_USERS)
 DEV_USERS = list(DEV_USERS)
-WOLVES = list(WOLVES)
-DEMONS = list(DEMONS)
-TIGERS = list(TIGERS)
+WHITELIST_USERS = list(WHITELIST_USERS)
+SUPPORT_USERS = list(SUPPORT_USERS)
 
 # Load at end to ensure all prev variables have been set
-from Maxrobot.modules.helper_funcs.handlers import (
+from Lumine.modules.helper_funcs.handlers import (
     CustomCommandHandler,
     CustomMessageHandler,
     CustomRegexHandler,
